@@ -4,7 +4,7 @@ import { api, db, InputFile } from 'sdk';
 import { eq } from 'sdk/db';
 import { snippets, cache } from '../schema.js';
 import { getProvider } from './llm.js';
-import { synthesize, modelLabel, FREE_MODEL, ptDay, freeVoiceFor } from './tts.js';
+import { synthesize, modelLabel, isFreeModel, ptDay } from './tts.js';
 import { understandMedia } from './translate.js';
 import { getLang } from './langs.js';
 import { getVoice, getPersona } from './settings.js';
@@ -44,8 +44,7 @@ export async function getSnippet(id) {
 // Sends `body` with a button that turns `speak` into a voice message.
 // accent: dialect of the spoken language; lang: its code (for the free voice).
 export async function sendWithVoiceButton(chat_id, body, speak, accent = null, lang = null) {
-  const gemini = (await getProvider())?.provider === 'gemini';
-  const canSpeak = speak && (gemini || freeVoiceFor(lang));
+  const canSpeak = Boolean(speak); // a free voice always exists as the last resort
   const reply_markup = canSpeak
     ? { inline_keyboard: [[{ text: '🔊 Ovozli', callback_data: `tts:${await saveSnippet(JSON.stringify({ t: speak, a: accent, l: lang }))}` }]] }
     : undefined;
@@ -63,7 +62,7 @@ async function getCachedVoice(key) {
   if (!raw) return null;
   try {
     const v = JSON.parse(raw);
-    if (v.m === FREE_MODEL && v.d !== ptDay()) return null;
+    if (isFreeModel(v.m) && v.d !== ptDay()) return null;
     return v; // { f: file_id, m: model, s: seconds }
   } catch {
     return null;

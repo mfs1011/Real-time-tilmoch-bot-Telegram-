@@ -1,7 +1,7 @@
 // Inline commands: `@bot <command> <matn>`.
 // Language codes (lib/langs.js) are commands automatically. Add your own
 // commands to CUSTOM below — each takes the text and returns the text to send.
-import { LANGS, getLang } from './langs.js';
+import { LANGS, getLang, canonical } from './langs.js';
 import { translate, runPrompt } from './translate.js';
 import { getDefaultLang } from './settings.js';
 import { langFor, findPersona } from './dialects.js';
@@ -43,10 +43,10 @@ export async function parseQuery(query, userId) {
         rest = pm[2].trim();
       }
       const v = rest.match(/^(\S+)\s+([\s\S]+)$/);
-      if (v && getLang(v[1])) return { kind: 'voice', code: v[1].toLowerCase(), text: v[2].trim(), explicit: true, userId, persona };
+      if (v && getLang(v[1])) return { kind: 'voice', code: canonical(v[1]), text: v[2].trim(), explicit: true, userId, persona };
       return { kind: 'voice', code: null, text: rest, explicit: true, userId, persona };
     }
-    if (getLang(cmd)) return { kind: 'lang', code: cmd, text: m[2].trim(), explicit: true, userId };
+    if (getLang(cmd)) return { kind: 'lang', code: canonical(cmd), text: m[2].trim(), explicit: true, userId };
     if (CUSTOM[cmd]) return { kind: 'custom', code: cmd, text: m[2].trim(), explicit: true, userId };
   }
   return { kind: 'lang', code: await getDefaultLang(userId), text: trimmed, explicit: false, userId };

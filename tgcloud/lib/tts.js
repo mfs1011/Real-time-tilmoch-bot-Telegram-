@@ -20,7 +20,16 @@ export const CHAIN = [
   { api: 'generate', model: 'gemini-2.5-pro-preview-tts' },
 ];
 export const FREE_MODEL = 'google-translate';
-export const modelLabel = (m) => (m === FREE_MODEL ? 'Google Translate (bepul)' : m.replace(/^gemini-/, ''));
+// Uzbek has no Google voice: Latin text is read by the Turkish voice, Cyrillic by the Russian one.
+const FREE_UZ_LATIN = 'google-translate:tr';
+const FREE_UZ_CYRILLIC = 'google-translate:ru';
+export const isFreeModel = (m) => String(m).startsWith(FREE_MODEL);
+export const modelLabel = (m) => {
+  if (m === FREE_UZ_LATIN) return 'Google Translate (bepul, turkcha talaffuz)';
+  if (m === FREE_UZ_CYRILLIC) return 'Google Translate (bepul, ruscha talaffuz)';
+  if (isFreeModel(m)) return 'Google Translate (bepul)';
+  return m.replace(/^gemini-/, '');
+};
 
 export class TtsQuotaError extends Error {}
 
@@ -134,8 +143,15 @@ const FREE_LANG = {
   zh: 'zh-CN', 'zh-tw': 'zh-TW', iw: 'iw', heb: 'iw', dan: 'da', tam: 'ta', nep: 'ne', bel: 'be',
   isl: 'is', amh: 'am', som: 'so', hau: 'ha', yor: 'yo', mya: 'my', sin: 'si', nb: 'no',
 };
-const NO_FREE = new Set(['uz', 'uzc']); // Google Translate has no Uzbek voice
-export const freeVoiceFor = (code) => (code && !NO_FREE.has(code) ? FREE_LANG[code] ?? code : null);
+// null/uz = Uzbek as typed. Returns { tl, model } — the Google voice to use.
+export function freeVoiceFor(code, text = '') {
+  if (!code || code === 'uz' || code === 'uzc') {
+    return /[\u0400-\u04FF]/.test(text) || code === 'uzc'
+      ? { tl: 'ru', model: FREE_UZ_CYRILLIC }
+      : { tl: 'tr', model: FREE_UZ_LATIN };
+  }
+  return { tl: FREE_LANG[code] ?? code, model: FREE_MODEL };
+}
 
 function chunks(text, max = 180) {
   const out = [];
@@ -152,14 +168,13 @@ function chunks(text, max = 180) {
 }
 
 async function freeTts(text, lang) {
-  const tl = freeVoiceFor(lang);
-  if (!tl) return null;
+  const { tl, model } = freeVoiceFor(lang, text);
   const parts = [];
   for (const q of chunks(text)) {
     const res = await fetch(`https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${encodeURIComponent(tl)}&q=${encodeURIComponent(q)}`, {
       headers: { 'user-agent': 'Mozilla/5.0' },
     });
-    if (!res.ok) throw new Error(`Bepul ovoz ishlamadi (${res.status}) — "${lang}" tili qo‘llanmasligi mumkin.`);
+    if (!res.ok) throw new Error(`Bepul ovoz ishlamadi (${res.status}): "${tl}" tili yo‘q bo‘lishi mumkin.`);
     for await (const c of res.body) parts.push(c);
   }
   const mp3 = new Uint8Array(parts.reduce((n, c) => n + c.length, 0));
@@ -167,7 +182,7 @@ async function freeTts(text, lang) {
   for (const c of parts) { mp3.set(c, o); o += c.length; }
   await countUse(FREE_MODEL);
   // Google Translate TTS MP3 is ~64 kbps.
-  return { mp3, seconds: Math.max(1, Math.round((mp3.length * 8) / 64000)), model: FREE_MODEL };
+  return { mp3, seconds: Math.max(1, Math.round((mp3.length * 8) / 64000)), model };
 }
 
 const ascii = (b, o) => String.fromCharCode(b[o], b[o + 1], b[o + 2], b[o + 3]);
@@ -230,9 +245,5 @@ export async function synthesize(apiKey, text, { voice = 'Kore', accent = null, 
     const g = await geminiTts(apiKey, body, voice, how);
     if (g) return { ...encodeMp3(decodeAudio(g)), model: g.model };
   }
-  const free = await freeTts(body, lang);
-  if (free) return free;
-  throw new TtsQuotaError(apiKey
-    ? 'Bugungi Gemini ovoz limitlari tugadi, bepul ovoz esa o‘zbekchani bilmaydi. Tarjima qilib o‘qiting (say en …) yoki limit tiklanishini kuting (Tinch okeani vaqti bilan yarim tunda).'
-    : 'Bepul ovoz o‘zbekchani bilmaydi — tilni ko‘rsating (say en …).');
+  return freeTts(body, lang);
 }

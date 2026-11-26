@@ -114,9 +114,16 @@ export function langsText() {
   ].join('\n');
 }
 
+// Country codes people often type instead of language codes.
+export const ALIASES = { jp: 'ja', cn: 'zh', kr: 'ko', ua: 'uk', gr: 'el', cz: 'cs', vn: 'vi', br: 'pt' };
+export const canonical = (code) => {
+  const c = String(code).toLowerCase();
+  return ALIASES[c] ?? c;
+};
+
 // Returns { name, flag } or null.
 export function getLang(code) {
-  const c = String(code).toLowerCase();
+  const c = canonical(code);
   if (LANGS[c]) return LANGS[c];
   if (!/^[a-z]{2}$/.test(c) || AMBIGUOUS.has(c)) return null;
   const name = displayNames.of(c);
