@@ -76,8 +76,8 @@ async function putCachedVoice(key, fileId, model, seconds) {
     .run();
 }
 
-const captionFor = (model, cached, extra) =>
-  [extra, `🔊 ${modelLabel(model)}${cached ? ' · kesh' : ''}`].filter(Boolean).join('\n');
+// Model name for the inline option title only — never in the sent message.
+export const modelTag = (model, cached) => `${modelLabel(model)}${cached ? ' · kesh' : ''}`;
 
 // Synthesizes (or reuses) a voice. Returns { fileId, model, seconds, cached } —
 // for a fresh voice, `send(InputFile)` must upload it and return the Message.
@@ -97,14 +97,14 @@ async function makeVoice(text, opts, send) {
 }
 
 // Text → voice message in the chat. opts: { voice, accent, style, lang };
-// extra: sendVoice params (caption is extended with the model name).
+// extra: sendVoice params.
 export async function sendSpeech(chat_id, text, opts = {}, extra = {}) {
   await api.sendChatAction({ chat_id, action: 'record_voice' }).catch(() => {});
   const r = await makeVoice(text, opts, (voice, duration, model) => api.sendVoice({
-    chat_id, voice, duration, ...extra, caption: captionFor(model, false, extra.caption),
+    chat_id, voice, duration, ...extra,
   }));
   if (r.cached) {
-    return api.sendVoice({ chat_id, voice: r.fileId, ...extra, caption: captionFor(r.model, true, extra.caption) });
+    return api.sendVoice({ chat_id, voice: r.fileId, ...extra });
   }
   return r.msg;
 }
@@ -120,7 +120,6 @@ export async function voiceFileId(uploadChatId, text, opts = {}) {
   return r;
 }
 
-export const voiceCaption = (model, cached) => captionFor(model, cached, null);
 
 // Picks the file to understand from a message, or null.
 export function pickMedia(m) {
