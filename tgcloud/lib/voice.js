@@ -16,8 +16,8 @@ import { getPersonaDef } from './dialects.js';
 export async function speechOpts(userId, accent = null, personaId = null, lang = null) {
   const persona = getPersonaDef(personaId) ?? getPersonaDef(await getPersona(userId));
   return persona
-    ? { voice: persona.voice, style: persona.style, accent, lang }
-    : { voice: await getVoice(userId), style: null, accent, lang };
+    ? { voice: persona.voice, style: persona.style, persona: persona.id, accent, lang }
+    : { voice: await getVoice(userId), style: null, persona: null, accent, lang };
 }
 
 const MAX_MEDIA_SECONDS = 300;

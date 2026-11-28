@@ -17,9 +17,10 @@ import { accessOf, requestAccess, setStatus, removeUser, buildUsersMenu } from '
 import { pickMedia, handleMedia, sendWithVoiceButton, sendSpeech, speechOpts } from '../lib/voice.js';
 import { langFor } from '../lib/dialects.js';
 import { ttsUsage, modelLabel, FREE_MODEL } from '../lib/tts.js';
+import { checkGapirKey, GAPIR_MAX_CHARS } from '../lib/gapir.js';
 import { buildDialectMenu, buildVoiceMenu, buildPersonaMenu } from '../lib/prefs_menu.js';
 
-const OWNER_ONLY = new Set(['/key', '/delkey', '/model', '/users', '/allow', '/deny']);
+const OWNER_ONLY = new Set(['/key', '/delkey', '/ttskey', '/model', '/users', '/allow', '/deny']);
 
 export default async function (message) {
   if (message.chat.type !== 'private') return;
@@ -103,6 +104,21 @@ export default async function (message) {
       await setSetting('llm_provider', provider);
       const label = PROVIDERS[provider].label;
       return reply(`🔑 ${label} kaliti tekshirildi va saqlandi, xabaringiz o‘chirildi. Endi tarjimalar ${label} orqali.`);
+    }
+
+    case '/ttskey': {
+      // gapir (o'zbekcha ovoz serveri) kaliti. `/ttskey off` — o'chirish.
+      await api.deleteMessage({ chat_id, message_id: message.message_id }).catch(() => {});
+      const key = arg.trim();
+      if (!key) return reply('Format: /ttskey <kalit>   (o‘chirish: /ttskey off)');
+      if (key === 'off') {
+        await setSetting('gapir_key', '');
+        return reply('gapir kaliti o‘chirildi. O‘zbekcha ovoz endi Gemini / Google orqali.');
+      }
+      const err = await checkGapirKey(key);
+      if (err) return reply(`❌ gapir kaliti saqlanmadi (xabaringiz o‘chirildi): ${err}`);
+      await setSetting('gapir_key', key);
+      return reply(`🔑 gapir kaliti saqlandi, xabaringiz o‘chirildi. O‘zbekcha matn (${GAPIR_MAX_CHARS} belgigacha) endi Gapiring ovozida.`);
     }
 
     case '/delkey':

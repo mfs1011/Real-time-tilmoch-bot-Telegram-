@@ -127,6 +127,7 @@ export function helpText(isOwner, botUsername = 'bot_username') {
     'Egasi uchun:',
     '/key <kalit> — Gemini yoki Claude kaliti (bot o‘zi aniqlaydi). Kalitsiz Google Translate ishlaydi',
     '/delkey — kalitni o‘chirish',
+    '/ttskey <kalit> — o‘zbekcha ovoz serveri (gapir) kaliti; /ttskey off — o‘chirish',
     '/model — Gemini modelini tanlash',
     '/users — foydalanuvchilar, ruxsatlar, ochiq rejim',
     '/allow <id> · /deny <id> — qo‘lda ruxsat berish/olish',
