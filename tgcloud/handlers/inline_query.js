@@ -12,7 +12,7 @@ import { translateMany } from '../lib/translate.js';
 import { getFavLangs } from '../lib/settings.js';
 import { langFor, PERSONAS, findPersona, matchPersonas } from '../lib/dialects.js';
 import { VOICE_WORDS } from '../lib/commands.js';
-import { voiceFileId, speechOpts, voiceCaption } from '../lib/voice.js';
+import { voiceFileId, speechOpts, modelTag } from '../lib/voice.js';
 import { LANGS, getLang } from '../lib/langs.js';
 import { looksLikeKey } from '../lib/llm.js';
 import { settle, DEBOUNCE_MS } from '../lib/debounce.js';
@@ -108,7 +108,7 @@ export default async function (query) {
           throw e;
         });
       return answer([
-        { type: 'voice', id: 'voice', voice_file_id: v.fileId, title: `${title} — ${clip(text, 40)}`, caption: voiceCaption(v.model, v.cached) },
+        { type: 'voice', id: 'voice', voice_file_id: v.fileId, title: `${title} · ${modelTag(v.model, v.cached)} — ${clip(text, 30)}` },
         article('voice_text', `${title.replace('🔊 ', '')} (matn)`, text),
       ]);
     }
