@@ -28,6 +28,7 @@ shaxsiy Telegram bot. **Telegram Serverless** ustida ishlaydi — server kerak e
 | `/lang en` · `/fav en ru tr` · `/langs` | standart til, sevimli tillar, ro‘yxat |
 | `/dialect en` | dialekt (American, British, …) |
 | `/voice` · `/persona` | ovoz va personaj |
+| `/uzovoz` | o‘zbekcha ovoz (Gapiring): ayol/erkak, ohang, uslub, jonlilik |
 | `/say en matn` | tarjima qilib ovozli xabar |
 | `/limits` | bugungi TTS limitlari |
 | `/key <kalit>` · `/model` | (egasi) Gemini/Claude kaliti, model tanlash |

@@ -119,6 +119,7 @@ export function helpText(isOwner, botUsername = 'bot_username') {
     '/dialect en — til dialektini tanlash (amerikacha/britancha …)',
     '/voice — ovoz tanlash (🎲 namunalar bilan)',
     '/persona — personaj: 🤖 robot, 🏴‍☠️ qaroqchi, 👴 bobo, 🎙 diktor …',
+    '/uzovoz — o‘zbekcha ovoz: ayol/erkak, ohang, uslub, jonlilik (Gapiring)',
     '/limits — bugungi ovoz limitlari (qaysi model, nechta)',
     '/status — joriy holat',
   ];

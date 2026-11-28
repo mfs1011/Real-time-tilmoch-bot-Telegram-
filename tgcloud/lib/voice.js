@@ -9,15 +9,19 @@ import { understandMedia } from './translate.js';
 import { getLang } from './langs.js';
 import { getVoice, getPersona } from './settings.js';
 import { getPersonaDef } from './dialects.js';
+import { getUzVoice } from './uzvoice.js';
+import { isUzbek } from './gapir.js';
 
 // TTS options for a user: a one-off persona (from "say qaroqchi …") wins,
 // then their saved character preset, then their plain voice.
 // lang: code of the spoken text (null = Uzbek/as typed) — used by the free fallback.
+// Uzbek text also gets the user's /uzovoz settings (a one-off persona still wins).
 export async function speechOpts(userId, accent = null, personaId = null, lang = null) {
   const persona = getPersonaDef(personaId) ?? getPersonaDef(await getPersona(userId));
+  const uz = isUzbek(lang) && !getPersonaDef(personaId) ? await getUzVoice(userId) : null;
   return persona
-    ? { voice: persona.voice, style: persona.style, persona: persona.id, accent, lang }
-    : { voice: await getVoice(userId), style: null, persona: null, accent, lang };
+    ? { voice: persona.voice, style: persona.style, persona: persona.id, accent, lang, uz }
+    : { voice: await getVoice(userId), style: null, persona: null, accent, lang, uz };
 }
 
 const MAX_MEDIA_SECONDS = 300;
@@ -55,7 +59,7 @@ export async function sendWithVoiceButton(chat_id, body, speak, accent = null, l
 // ---- voice cache: same text + voice + style + accent → reuse Telegram file_id ----
 // Free (robotic) voices are kept only for the day, so a better Gemini voice is
 // made once the quota resets.
-const voiceKey = (text, o) => `voice2:${o.voice ?? ''}:${o.style ?? ''}:${o.accent ?? ''}:${o.lang ?? ''}:${text}`;
+const voiceKey = (text, o) => `voice2:${o.voice ?? ''}:${o.style ?? ''}:${o.accent ?? ''}:${o.lang ?? ''}${o.uz ? `:uz=${JSON.stringify(o.uz)}` : ''}:${text}`;
 
 async function getCachedVoice(key) {
   const raw = (await db.select().from(cache).where(eq(cache.key, key)).get())?.value;

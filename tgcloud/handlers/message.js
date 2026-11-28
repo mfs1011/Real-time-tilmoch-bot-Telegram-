@@ -18,6 +18,7 @@ import { pickMedia, handleMedia, sendWithVoiceButton, sendSpeech, speechOpts } f
 import { langFor } from '../lib/dialects.js';
 import { ttsUsage, modelLabel, FREE_MODEL } from '../lib/tts.js';
 import { checkGapirKey, GAPIR_MAX_CHARS } from '../lib/gapir.js';
+import { buildUzMenu } from '../lib/uzvoice.js';
 import { buildDialectMenu, buildVoiceMenu, buildPersonaMenu } from '../lib/prefs_menu.js';
 
 const OWNER_ONLY = new Set(['/key', '/delkey', '/ttskey', '/model', '/users', '/allow', '/deny']);
@@ -105,6 +106,9 @@ export default async function (message) {
       const label = PROVIDERS[provider].label;
       return reply(`🔑 ${label} kaliti tekshirildi va saqlandi, xabaringiz o‘chirildi. Endi tarjimalar ${label} orqali.`);
     }
+
+    case '/uzovoz':
+      return api.sendMessage({ chat_id, ...(await buildUzMenu(message.from.id)) });
 
     case '/ttskey': {
       // gapir (o'zbekcha ovoz serveri) kaliti. `/ttskey off` — o'chirish.

@@ -240,10 +240,10 @@ function encodeMp3({ pcm, rate }) {
 // ("a whisper") go to the Interactions API as speech_metadata.style.
 // lang: language code of `text` — needed for the free fallback (null = Uzbek/unknown).
 // Uzbek goes to gapir first (real Uzbek voice, no quota); apiKey null → no Gemini.
-export async function synthesize(apiKey, text, { voice = 'Kore', accent = null, style = null, lang = null, persona = null } = {}) {
+export async function synthesize(apiKey, text, { voice = 'Kore', accent = null, style = null, lang = null, persona = null, uz = null } = {}) {
   const body = text.slice(0, TTS_MAX_CHARS);
   if (isUzbek(lang)) {
-    const u = await gapirTts(body, { voice, persona });
+    const u = await gapirTts(body, { voice, persona, uz });
     if (u) {
       await countUse(GAPIR_MODEL);
       return { ...encodeMp3(decodeAudio(u)), model: u.model };

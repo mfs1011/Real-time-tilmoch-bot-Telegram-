@@ -7,6 +7,7 @@ import { buildDialectMenu, buildVoiceMenu, buildPersonaMenu } from '../lib/prefs
 import { buildModelMenu } from '../lib/models_menu.js';
 import { getUser, setStatus, removeUser, isPublic, setPublic, buildUsersMenu, accessOf } from '../lib/access.js';
 import { getSnippet, sendSpeech, speechOpts } from '../lib/voice.js';
+import { buildUzMenu, applyUzButton, UZ_SAMPLE, uzSummary } from '../lib/uzvoice.js';
 
 export default async function (q) {
   const toast = (text) => api.answerCallbackQuery({ callback_query_id: q.id, text });
@@ -28,7 +29,9 @@ export default async function (q) {
   };
 
   // Per-user buttons — anyone with access.
-  if (/^(tts|dia|vc|vcs|vcset|ps):/.test(data)) {
+  if (data === 'noop') return toast(''); // header/label buttons
+
+  if (/^(tts|dia|vc|vcs|vcset|ps|uz):/.test(data)) {
     if (!(await accessOf(q.from.id))) return toast('Ruxsat yo‘q.');
 
     // "🔊 Ovozli"
@@ -55,6 +58,15 @@ export default async function (q) {
     }
 
     const chatId = q.message?.chat.id ?? q.from.id;
+
+    // /uzovoz menu: "uz:menu", "uz:v:f1", "uz:m:<role>:<manner>", "uz:g:…", "uz:t:…", "uz:s" sample, "uz:x" reset.
+    if (data.startsWith('uz:')) {
+      const r = await applyUzButton(q.from.id, data);
+      await toast(r.toast);
+      await edit(await buildUzMenu(q.from.id));
+      if (r.sample) return speakTo(chatId, UZ_SAMPLE, { lang: 'uz', uz: r.sample }, { caption: `🇺🇿 ${uzSummary(r.sample)}` });
+      return;
+    }
 
     // /voice menu. "vc:menu" open; "vc:<name>" pick + sample.
     if (data === 'vc:menu') {

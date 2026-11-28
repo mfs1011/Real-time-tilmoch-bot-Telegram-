@@ -66,6 +66,7 @@ export async function buildVoiceMenu(userId) {
     reply_markup: {
       inline_keyboard: [
         [{ text: '🎲 3 ta namuna', callback_data: 'vcs:' }, { text: '🎭 Personajlar', callback_data: 'ps:menu' }],
+        [{ text: '🇺🇿 O‘zbekcha ovoz sozlamalari', callback_data: 'uz:menu' }],
         ...rows(VOICES.map(([name, style]) => ({
           text: `${!persona && name === current ? '✅ ' : ''}${name} · ${style}`,
           callback_data: `vc:${name}`,

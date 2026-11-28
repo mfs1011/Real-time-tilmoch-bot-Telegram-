@@ -6,6 +6,7 @@
 // (https://huggingface.co/kyutai/pocket-tts), CC BY 4.0
 import { fetch } from 'sdk';
 import { getSetting } from './settings.js';
+import { uzRequest } from './uzvoice.js';
 
 export const GAPIR_MODEL = 'gapir';
 const API = 'https://tts.kamgapir.uz/v1';
@@ -37,8 +38,10 @@ const PERSONA = {
   sport: ['m1', 'emotional', 'hurried'],
 };
 
-// opts: { voice, persona } from speechOpts(). Returns the JSON body for /v1/tts.
-function request(text, { voice, persona }) {
+// opts: { voice, persona, uz } from speechOpts(). Returns the JSON body for /v1/tts.
+// uz = the user's /uzovoz settings; they win over the Gemini voice/persona mapping.
+function request(text, { voice, persona, uz }) {
+  if (uz) return { text, ...uzRequest(uz) };
   const p = PERSONA[persona];
   if (p) return { text, voice: p[0], role: p[1], manner: p[2] };
   return { text, voice: MALE.has(voice) ? 'm1' : 'f1', role: 'assistant', manner: 'neutral' };
