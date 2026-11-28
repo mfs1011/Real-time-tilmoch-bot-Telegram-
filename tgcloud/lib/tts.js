@@ -4,6 +4,7 @@ import { fetch } from 'sdk';
 import { Mp3Encoder } from './vendor/lame.js';
 import { base64ToBytes } from './b64.js';
 import { getSetting, setSetting } from './settings.js';
+import { gapirTts, isUzbek, GAPIR_MODEL } from './gapir.js';
 
 export const TTS_MAX_CHARS = 1500;
 
@@ -28,6 +29,7 @@ export const modelLabel = (m) => {
   if (m === FREE_UZ_LATIN) return 'Google Translate (bepul, turkcha talaffuz)';
   if (m === FREE_UZ_CYRILLIC) return 'Google Translate (bepul, ruscha talaffuz)';
   if (isFreeModel(m)) return 'Google Translate (bepul)';
+  if (m === GAPIR_MODEL) return 'Gapiring (o‘zbekcha)';
   return m.replace(/^gemini-/, '');
 };
 
@@ -57,7 +59,7 @@ const markDown = (model, ms) => setSetting(`ttsdown:${model}`, Date.now() + ms);
 export async function ttsUsage() {
   const day = ptDay();
   const rows = [];
-  for (const { model } of [...CHAIN, { model: FREE_MODEL }]) {
+  for (const { model } of [{ model: GAPIR_MODEL }, ...CHAIN, { model: FREE_MODEL }]) {
     rows.push({
       model,
       used: Number((await getSetting(`ttsuse:${day}:${model}`)) || 0),
@@ -237,9 +239,16 @@ function encodeMp3({ pcm, rate }) {
 // Returns { mp3: Uint8Array, seconds, model }. accent ("British") and style
 // ("a whisper") go to the Interactions API as speech_metadata.style.
 // lang: language code of `text` — needed for the free fallback (null = Uzbek/unknown).
-// apiKey null → free voice only.
-export async function synthesize(apiKey, text, { voice = 'Kore', accent = null, style = null, lang = null } = {}) {
+// Uzbek goes to gapir first (real Uzbek voice, no quota); apiKey null → no Gemini.
+export async function synthesize(apiKey, text, { voice = 'Kore', accent = null, style = null, lang = null, persona = null } = {}) {
   const body = text.slice(0, TTS_MAX_CHARS);
+  if (isUzbek(lang)) {
+    const u = await gapirTts(body, { voice, persona });
+    if (u) {
+      await countUse(GAPIR_MODEL);
+      return { ...encodeMp3(decodeAudio(u)), model: u.model };
+    }
+  }
   if (apiKey) {
     const how = [style, accent && `a natural ${accent} accent`].filter(Boolean).join(', ') || null;
     const g = await geminiTts(apiKey, body, voice, how);
